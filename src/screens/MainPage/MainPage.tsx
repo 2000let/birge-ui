@@ -1,21 +1,16 @@
 import React, { useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { CommentItem } from "./components/CommentItem";
-import { CommentsResponse, getComments } from "@/services/api/CommentsApi";
 
 import "./MainPage.scss";
 import { ConstantUtils } from "@/services/ConstantUtils";
+import { Comments } from "@/models/Comments";
 
-const threshold = 3; // Define a threshold for when to fetch more data
 
 const MainPage: React.FC = () => {
-  const { elements, allElementsSize, currentOffset, currentLimit } = useLoaderData() as CommentsResponse;
+  const elements = useLoaderData() as Comments[];
 
   const [start, setStart] = useState(0);
-  const [elementsState, setElementsState] = useState(elements);
-  const [offset, setOffset] = useState(currentOffset);
-  const [limit, setLimit] = useState(currentLimit);
-  const [isFetching, setIsFetching] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -24,36 +19,19 @@ const MainPage: React.FC = () => {
   };
 
   const getBottomHeight = () => {
-    return ConstantUtils.BLOCK_HEIGHT * (elementsState.length - (start + ConstantUtils.VISIBLE_ELEMENTS + 1));
+    return (
+      ConstantUtils.BLOCK_HEIGHT *
+      (elements.length - (start + ConstantUtils.VISIBLE_ELEMENTS + 1))
+    );
   };
 
   const scrollHandler = async (event: React.UIEvent<HTMLElement>) => {
     setStart(
       Math.min(
-        elementsState.length - ConstantUtils.VISIBLE_ELEMENTS - 1,
+        elements.length - ConstantUtils.VISIBLE_ELEMENTS - 1,
         Math.floor(event.currentTarget.scrollTop / ConstantUtils.BLOCK_HEIGHT)
       )
     );
-
-    if (
-      elementsState.length - start <= ConstantUtils.VISIBLE_ELEMENTS + threshold &&
-      !isFetching &&
-      elementsState.length < allElementsSize
-    ) {
-      setIsFetching(true);
-
-      const newOffset = offset + limit;
-      const newLimit = limit;
-      const newElements = await getComments(newOffset, newLimit);
-      setElementsState((prevElements) => [
-        ...prevElements,
-        ...newElements.elements,
-      ]);
-      setOffset(newOffset);
-      setLimit(newLimit);
-
-      setIsFetching(false);
-    }
   };
 
   return (
@@ -64,7 +42,7 @@ const MainPage: React.FC = () => {
       style={{ height: ConstantUtils.BLOCK_HEIGHT * ConstantUtils.VISIBLE_ELEMENTS + 1, overflow: "auto" }}
     >
       <div style={{ height: getTopHeight() }} />
-      {elementsState
+      {elements
         .slice(start, start + ConstantUtils.VISIBLE_ELEMENTS + 1)
         .map((element) => {
           return (
